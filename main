@@ -1,0 +1,110 @@
+import weka.classifiers.Classifier;
+import weka.classifiers.functions.Logistic;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+public class DiabetesPrediction {
+
+    private Classifier model;
+    private double threshold = 0.5;
+
+    public DiabetesPrediction() throws Exception {
+        // Initialize Logistic Regression model
+        model = new Logistic();
+    }
+
+    // Train the model using ARFF dataset
+    public void train(Instances trainingData) throws Exception {
+        trainingData.setClassIndex(trainingData.numAttributes() - 1);
+        model.buildClassifier(trainingData);
+    }
+
+    // Predict diabetes probability in percentage
+    public double predictPercent(Map<String, Double> features) throws Exception {
+
+        // Create attributes
+        ArrayList<Attribute> attributes = new ArrayList<>();
+        attributes.add(new Attribute("Pregnancies"));
+        attributes.add(new Attribute("Glucose"));
+        attributes.add(new Attribute("BloodPressure"));
+        attributes.add(new Attribute("SkinThickness"));
+        attributes.add(new Attribute("Insulin"));
+        attributes.add(new Attribute("BMI"));
+        attributes.add(new Attribute("DiabetesPedigreeFunction"));
+        attributes.add(new Attribute("Age"));
+
+        // Class attribute
+        ArrayList<String> classValues = new ArrayList<>();
+        classValues.add("0");
+        classValues.add("1");
+        attributes.add(new Attribute("Outcome", classValues));
+
+        // Create dataset structure
+        Instances dataset = new Instances("DiabetesPrediction", attributes, 0);
+        dataset.setClassIndex(dataset.numAttributes() - 1);
+
+        // Create instance
+        DenseInstance instance = new DenseInstance(dataset.numAttributes());
+        instance.setValue(attributes.get(0), features.get("Pregnancies"));
+        instance.setValue(attributes.get(1), features.get("Glucose"));
+        instance.setValue(attributes.get(2), features.get("BloodPressure"));
+        instance.setValue(attributes.get(3), features.get("SkinThickness"));
+        instance.setValue(attributes.get(4), features.get("Insulin"));
+        instance.setValue(attributes.get(5), features.get("BMI"));
+        instance.setValue(attributes.get(6), features.get("DiabetesPedigreeFunction"));
+        instance.setValue(attributes.get(7), features.get("Age"));
+
+        instance.setDataset(dataset);
+
+        // Get probability distribution
+        double[] probs = model.distributionForInstance(instance);
+
+        // Probability of diabetes (class 1)
+        double probability = probs[1];
+
+        // Convert to percentage
+        return Math.round(probability * 10000.0) / 100.0;
+    }
+
+    // Example usage
+    public static void main(String[] args) {
+        try {
+            DiabetesPrediction predictor = new DiabetesPrediction();
+
+            // Load and train model (replace with your dataset loading code)
+            // DataSource source = new DataSource("diabetes.arff");
+            // Instances data = source.getDataSet();
+            // predictor.train(data);
+
+            // Sample input
+            Map<String, Double> features = new HashMap<>();
+            features.put("Pregnancies", 2.0);
+            features.put("Glucose", 120.0);
+            features.put("BloodPressure", 70.0);
+            features.put("SkinThickness", 20.0);
+            features.put("Insulin", 79.0);
+            features.put("BMI", 25.5);
+            features.put("DiabetesPedigreeFunction", 0.45);
+            features.put("Age", 35.0);
+
+            // Predict
+            double result = predictor.predictPercent(features);
+
+            System.out.println("Diabetes Probability: " + result + "%");
+
+            if (result >= 50.0) {
+                System.out.println("High Risk of Diabetes");
+            } else {
+                System.out.println("Low Risk of Diabetes");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
